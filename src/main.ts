@@ -1,32 +1,27 @@
-const car = document.querySelector<HTMLDivElement>(".car");
+import { Application, Graphics } from "pixi.js";
+import { hitWall } from "./wallAnimate";
 
-if (car) {
-  let hue = 0;
-  let x = 0;
-  let y = 0;
+const app = new Application();
 
-  function animate(): void {
-    if (y != 0) {
-     y = (y + 1) % 500;
-     car.style.transform = `translateY(${y}px)`;
-     car.style.transform = `translateX(${x}px)`;
+await app.init({
+  width: 3000,
+  height: 600,
+  background: "grey",
+});
 
-    }
-    else if (x != 360) {
-      x += 1;
-      car.style.transform = `translateX(${x}px)`;
-    }
-    else {
-      y += 1
-    }
+document.body.appendChild(app.canvas);
 
-    hue = (hue + 1) % 360;
-    car.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
+// создаём стену
+const wall = new Graphics()
+  .rect(0, 0, 50, 300)
+  .fill("lightblue");
 
+wall.x = 700;
+wall.y = 180;
 
+app.stage.addChild(wall);
 
-    requestAnimationFrame(animate);
-  }
-
-  animate();
-}
+// через 2 секунды разрушаем
+setTimeout(() => {
+  hitWall(wall);
+}, 2000);

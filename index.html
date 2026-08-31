@@ -1,23 +1,38 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Мой проект</title>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
-      .car {
-        width: 100px;
-        height: 100px;
-        background-color: aqua;
-      }
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        .world {
+            position: relative;
+            display: flex;
+            align-items: flex-end
+        }
+        .tank {
+            position: absolute;
+            left: 50px;
+            top: 200px;
+        }
+        .tank img {
+            width: 500px;
+            height: auto;
+          }
     </style>
-  </head>
-  <body>
-    <div class="car"></div>
-    <script type="module" src="./src/main.ts"></script>
-  </body>
+</head>
+<body>
+<div class="world">
+    <div class="tank">
+        <img src="src/tank.png" alt="">
+    </div>
+    <div class="wall"></div>
+</div>
+
+<script type="module" src="./src/main.ts"></script>
+</body>
 </html>
