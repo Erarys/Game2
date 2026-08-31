@@ -11,17 +11,29 @@ await app.init({
 
 document.body.appendChild(app.canvas);
 
-// создаём стену
-const wall = new Graphics()
-  .rect(0, 0, 50, 300)
-  .fill("lightblue");
 
-wall.x = 700;
-wall.y = 180;
+function createWall(x: number, y: number): Graphics {
+  const wall = new Graphics()
+      .rect(0, 0, 50, 300)
+      .fill("lightblue");
 
-app.stage.addChild(wall);
+  wall.x = x;
+  wall.y = y;
+  wall.eventMode = "static";
+  wall.cursor = "pointer";
 
-// через 2 секунды разрушаем
-setTimeout(() => {
-  hitWall(wall);
-}, 2000);
+  wall.on("pointerdown", () => {
+    hitWall(wall);
+  });
+
+  app.stage.addChild(wall);
+
+  return wall;
+}
+const walls: Graphics[] = [];
+
+for (let i = 0; i < 5; i++){
+  const wall = createWall(700 + i * 400, 180);
+  walls.push(wall)
+}
+
