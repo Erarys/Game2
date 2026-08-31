@@ -1,5 +1,6 @@
 import { Application, Graphics } from "pixi.js";
 import { hitWall } from "./wallAnimate";
+import { createExplosion } from "./tankFiire";
 
 const app = new Application();
 
@@ -10,7 +11,7 @@ await app.init({
 });
 
 document.body.appendChild(app.canvas);
-
+const tank = new Graphics ()
 
 function createWall(x: number, y: number): Graphics {
   const wall = new Graphics()
@@ -23,6 +24,15 @@ function createWall(x: number, y: number): Graphics {
   wall.cursor = "pointer";
 
   wall.on("pointerdown", () => {
+    const explosionX = tank.x + 550;
+    const explosionY = tank.y + 290;
+
+    createExplosion(
+      app,
+      app.stage,
+      explosionX,
+      explosionY,
+    );
     hitWall(wall);
   });
 
