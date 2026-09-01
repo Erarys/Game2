@@ -52,46 +52,142 @@ backgroundLayer.addChild(mapSprite);
 // Точка положения танка
 // -------------------------
 
-const tank = new Graphics();
+const tankTexture = await Assets.load("/public/maps/tank.png");
 
-tank.position.set(0, 0);
+const tank = new Sprite(tankTexture);
 
+tank.width = 500;
+tank.height = 300;
+tank.position.set(50, 500);
 // Пока tank является только точкой координат.
 // Картинка танка всё ещё находится в index.html.
+
 objectLayer.addChild(tank);
 
+const pressedKeys = new Set<string>();
+
+window.addEventListener("keydown", (event) => {
+  pressedKeys.add(event.code);
+
+  // Не прокручивать страницу стрелками и пробелом
+  if (
+    event.code === "ArrowLeft" ||
+    event.code === "ArrowRight" ||
+    event.code === "ArrowUp" ||
+    event.code === "ArrowDown" ||
+    event.code === "Space"
+  ) {
+    event.preventDefault();
+  }
+});
+
+window.addEventListener("keyup", (event) => {
+  pressedKeys.delete(event.code);
+});
+
+
+const tankSpeed = 500;
+
+function tankMove(): void {
+  const deltaSeconds =
+    app.ticker.deltaMS / 1000;
+
+  const distance =
+    tankSpeed * deltaSeconds;
+
+  // Влево: A или стрелка
+  if (
+    pressedKeys.has("KeyA") ||
+    pressedKeys.has("ArrowLeft")
+  ) {
+    tank.x -= distance;
+  }
+
+  // Вправо: D или стрелка
+  if (
+    pressedKeys.has("KeyD") ||
+    pressedKeys.has("ArrowRight")
+  ) {
+    tank.x += distance;
+  }
+
+  // Вверх: W или стрелка
+  if (
+    pressedKeys.has("KeyW") ||
+    pressedKeys.has("ArrowUp")
+  ) {
+    tank.y -= distance;
+  }
+
+  // Вниз: S или стрелка
+  if (
+    pressedKeys.has("KeyS") ||
+    pressedKeys.has("ArrowDown")
+  ) {
+    tank.y += distance;
+  }
+
+  // Ограничение по ширине карты
+  tank.x = Math.max(
+    0,
+    Math.min(tank.x, 3000 - tank.width),
+  );
+
+  // Ограничение по высоте карты
+  tank.y = Math.max(
+    0,
+    Math.min(
+      tank.y,
+      app.screen.height - tank.height,
+    ),
+  );
+}
+
+app.ticker.add(tankMove);
 // -------------------------
 // Стены
 // -------------------------
 
-const walls: Graphics[] = [];
 
-function createWall(x: number, y: number): Graphics {
-  const wall = new Graphics()
-    .rect(0, 0, 50, 300)
-    .fill("lightblue");
+const enemyTexture = await Assets.load(
+  "/maps/enemy.png",
+);
 
-  wall.position.set(x, y);
-  wall.eventMode = "static";
-  wall.cursor = "pointer";
+const enemies: Sprite[] = [];
 
-  // Нажимаем на стену — танк стреляет
-  wall.on("pointerdown", () => {
+
+function createEnemy(
+  x: number,
+  y: number,
+): Sprite {
+  const enemy = new Sprite(enemyTexture);
+
+  enemy.width = 250;
+  enemy.height = 150;
+
+  enemy.position.set(x, y);
+
+  enemy.eventMode = "static";
+  enemy.cursor = "pointer";
+
+  // Клик по противнику — выстрел
+  enemy.on("pointerdown", () => {
     fire();
   });
 
-  objectLayer.addChild(wall);
+  objectLayer.addChild(enemy);
 
-  return wall;
+  return enemy;
 }
 
-for (let i = 0; i < 9; i++) {
-  const wall = createWall(
+// Создаём несколько противников
+for (let i = 0; i < 6; i++) {
+  const enemy = createEnemy(
     700 + i * 400,
-    180,
+    400,
   );
 
-  walls.push(wall);
+  enemies.push(enemy);
 }
 
 // -------------------------
@@ -118,7 +214,7 @@ function shootBullet(
   // Пуля находится внутри игрового мира
   effectLayer.addChild(bullet);
 
-  const speed = 3900;
+  const speed = 500;
 
   function destroyBullet(): void {
     app.ticker.remove(moveBullet);
@@ -136,33 +232,33 @@ function shootBullet(
     const nextX =
       bullet.x + speed * deltaSeconds;
 
-    for (const wall of walls) {
-      if (wall.destroyed) continue;
+    for (const enemy of enemies) {
+      if (enemy.destroyed) continue;
 
-      const wallLeft = wall.x;
-      const wallRight =
-        wall.x + wall.width;
+      const enemyLeft = enemy.x;
+      const enemyRight =
+        enemy.x + enemy.width;
 
-      const wallTop = wall.y;
-      const wallBottom =
-        wall.y + wall.height;
+      const enemyTop = enemy.y;
+      const enemyBottom =
+        enemy.y + enemy.height;
 
-      const crossesWallHorizontally =
-        nextX + bulletRadius >= wallLeft &&
-        previousX - bulletRadius <= wallRight;
+      const crossesEnemyHorizontally =
+        nextX + bulletRadius >= enemyLeft &&
+        previousX - bulletRadius <= enemyRight;
 
-      const crossesWallVertically =
-        bullet.y + bulletRadius >= wallTop &&
-        bullet.y - bulletRadius <= wallBottom;
+      const crossesEnemyVertically =
+        bullet.y + bulletRadius >= enemyTop &&
+        bullet.y - bulletRadius <= enemyBottom;
 
       if (
-        crossesWallHorizontally &&
-        crossesWallVertically
+        crossesEnemyHorizontally &&
+        crossesEnemyVertically
       ) {
+        // Ставим пулю в точку попадания
         bullet.x =
-          wallLeft - bulletRadius;
+          enemyLeft - bulletRadius;
 
-        // Взрыв в месте попадания
         createExplosion(
           app,
           effectLayer,
@@ -170,7 +266,10 @@ function shootBullet(
           bullet.y,
         );
 
-        hitWall(wall);
+        // Уничтожаем вражеский танк
+        enemy.destroy();
+
+        // Уничтожаем пулю
         destroyBullet();
 
         return;
@@ -192,10 +291,9 @@ function shootBullet(
 // -------------------------
 
 function fire(): void {
-  const startX = tank.x + 550;
-  const startY = tank.y + 290;
+  const startX = tank.x + tank.width;
+  const startY = tank.y + tank.height * 0.3;
 
-  // Вспышка возле дула
   createExplosion(
     app,
     effectLayer,
@@ -205,3 +303,4 @@ function fire(): void {
 
   shootBullet(startX, startY);
 }
+
